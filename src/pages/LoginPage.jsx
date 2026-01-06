@@ -9,6 +9,7 @@ export default function LoginPage() {
   const [errors, setErrors] = useState({})
   const [successMessage, setSuccessMessage] = useState('')
   const [showPassword, setShowPassword] = useState(false)
+  const [loading, setLoading] = useState(false)
   const navigate = useNavigate()
   const { signIn } = useAuthStore()
 
@@ -33,14 +34,25 @@ export default function LoginPage() {
       return
     }
 
+    setLoading(true)
     try {
       await signIn(email, password)
       setSuccessMessage(`✓ Успешный вход! Email: ${email}`)
+      
+      setEmail('')
+      setPassword('')
+      setErrors({})
+      
       setTimeout(() => {
         navigate('/projects')
       }, 2000)
     } catch (error) {
-      setErrors({ submit: error.message })
+      console.error('Login error:', error)
+      setErrors({ 
+        submit: error.message || 'Ошибка при входе. Проверьте email и пароль.' 
+      })
+    } finally {
+      setLoading(false)
     }
   }
 
@@ -59,6 +71,12 @@ export default function LoginPage() {
           </div>
         )}
 
+        {errors.submit && (
+          <div className="error-message show" style={{ display: 'block', marginBottom: '16px' }}>
+            {errors.submit}
+          </div>
+        )}
+
         <form onSubmit={handleSubmit} className="auth-form">
           <div className="form-group">
             <label htmlFor="email">Email адрес</label>
@@ -68,6 +86,7 @@ export default function LoginPage() {
               placeholder="you@example.com"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
+              disabled={loading}
               required
             />
             {errors.email && <div className="error-message show">{errors.email}</div>}
@@ -82,12 +101,14 @@ export default function LoginPage() {
                 placeholder="••••••••"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
+                disabled={loading}
                 required
               />
               <button
                 type="button"
                 className="toggle-password"
                 onClick={() => setShowPassword(!showPassword)}
+                disabled={loading}
               >
                 {showPassword ? '🙈' : '👁️'}
               </button>
@@ -95,8 +116,12 @@ export default function LoginPage() {
             {errors.password && <div className="error-message show">{errors.password}</div>}
           </div>
 
-          <button type="submit" className="button button-primary">
-            Войти
+          <button 
+            type="submit" 
+            className="button button-primary"
+            disabled={loading}
+          >
+            {loading ? 'Вход...' : 'Войти'}
           </button>
         </form>
 

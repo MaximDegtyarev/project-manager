@@ -12,6 +12,7 @@ export default function RegisterPage() {
   const [successMessage, setSuccessMessage] = useState('')
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
+  const [loading, setLoading] = useState(false)
   const navigate = useNavigate()
   const { signUp } = useAuthStore()
 
@@ -44,14 +45,27 @@ export default function RegisterPage() {
       return
     }
 
+    setLoading(true)
     try {
       await signUp(email, password, fullName)
       setSuccessMessage(`✓ Аккаунт создан! Добро пожаловать, ${fullName}!`)
+      
+      setFullName('')
+      setEmail('')
+      setPassword('')
+      setConfirmPassword('')
+      setErrors({})
+      
       setTimeout(() => {
         navigate('/login')
       }, 2000)
     } catch (error) {
-      setErrors({ submit: error.message })
+      console.error('Registration error:', error)
+      setErrors({ 
+        submit: error.message || 'Ошибка при регистрации. Попробуйте еще раз.' 
+      })
+    } finally {
+      setLoading(false)
     }
   }
 
@@ -70,6 +84,12 @@ export default function RegisterPage() {
           </div>
         )}
 
+        {errors.submit && (
+          <div className="error-message show" style={{ display: 'block', marginBottom: '16px' }}>
+            {errors.submit}
+          </div>
+        )}
+
         <form onSubmit={handleSubmit} className="auth-form">
           <div className="form-group">
             <label htmlFor="fullName">Полное имя</label>
@@ -79,6 +99,7 @@ export default function RegisterPage() {
               placeholder="Иван Петров"
               value={fullName}
               onChange={(e) => setFullName(e.target.value)}
+              disabled={loading}
               required
             />
             {errors.fullName && <div className="error-message show">{errors.fullName}</div>}
@@ -92,6 +113,7 @@ export default function RegisterPage() {
               placeholder="you@example.com"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
+              disabled={loading}
               required
             />
             {errors.email && <div className="error-message show">{errors.email}</div>}
@@ -106,12 +128,14 @@ export default function RegisterPage() {
                 placeholder="Минимум 8 символов"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
+                disabled={loading}
                 required
               />
               <button
                 type="button"
                 className="toggle-password"
                 onClick={() => setShowPassword(!showPassword)}
+                disabled={loading}
               >
                 {showPassword ? '🙈' : '👁️'}
               </button>
@@ -128,12 +152,14 @@ export default function RegisterPage() {
                 placeholder="Повторите пароль"
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
+                disabled={loading}
                 required
               />
               <button
                 type="button"
                 className="toggle-password"
                 onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                disabled={loading}
               >
                 {showConfirmPassword ? '🙈' : '👁️'}
               </button>
@@ -141,8 +167,12 @@ export default function RegisterPage() {
             {errors.confirmPassword && <div className="error-message show">{errors.confirmPassword}</div>}
           </div>
 
-          <button type="submit" className="button button-primary">
-            Создать аккаунт
+          <button 
+            type="submit" 
+            className="button button-primary"
+            disabled={loading}
+          >
+            {loading ? 'Создание аккаунта...' : 'Создать аккаунт'}
           </button>
         </form>
 

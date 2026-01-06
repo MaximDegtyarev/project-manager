@@ -1,35 +1,63 @@
 import { create } from 'zustand'
-import { getCurrentUser, signOut as supabaseSignOut } from '../services/auth'
+import { supabase } from '../services/supabase'
 
 export const useAuthStore = create((set) => ({
   user: null,
-  loading: true,
+  loading: false,
   error: null,
 
-  checkAuth: async () => {
+  signUp: async (email, password, fullName) => {
+    set({ loading: true, error: null })
     try {
-      set({ loading: true, error: null })
-      const user = await getCurrentUser()
-      set({ user })
-    } catch (error) {
-      set({ user: null })
-      console.log('No active session')
-    } finally {
-      set({ loading: false })
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: { full_name: fullName }
+        }
+      })
+      if (error) throw error
+      set({ user: data.user, loading: false })
+      return data
+    } catch (err) {
+      set({ error: err.message, loading: false })
+      throw err
+    }
+  },
+
+  signIn: async (email, password) => {
+    set({ loading: true, error: null })
+    try {
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password
+      })
+      if (error) throw error
+      set({ user: data.user, loading: false })
+      return data
+    } catch (err) {
+      set({ error: err.message, loading: false })
+      throw err
     }
   },
 
   signOut: async () => {
+    set({ loading: true })
     try {
-      set({ loading: true })
-      await supabaseSignOut()
-      set({ user: null })
-    } catch (error) {
-      set({ error: error.message })
-    } finally {
-      set({ loading: false })
+      await supabase.auth.signOut()
+      set({ user: null, loading: false })
+    } catch (err) {
+      set({ error: err.message, loading: false })
+      throw err
     }
   },
 
-  setError: (error) => set({ error }),
+  checkAuth: async () => {
+    try {
+      const { data: { session } } = await supabase.auth.getSession()
+      set({ user: session?.user || null })
+    } catch (err) {
+      set({ user: null })
+    }
+  }
 }))
