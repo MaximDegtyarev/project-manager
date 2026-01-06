@@ -1,7 +1,8 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuthStore } from '../store/useAuthStore'
 import '../styles/auth.css'
+
 
 export default function RegisterPage() {
   const [fullName, setFullName] = useState('')
@@ -14,7 +15,28 @@ export default function RegisterPage() {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   const [loading, setLoading] = useState(false)
   const navigate = useNavigate()
-  const { signUp } = useAuthStore()
+  const { signUp, user, loading: appLoading, checkAuth } = useAuthStore()
+
+  // 🔑 Если уже авторизован → редирект на /main
+  useEffect(() => {
+    if (!appLoading && user) {
+      navigate('/main', { replace: true })
+    }
+  }, [user, appLoading, navigate])
+
+  // 🚀 Показываем loading пока проверяется авторизация
+  if (appLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-indigo-50 via-white to-blue-50">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
+      </div>
+    )
+  }
+
+  // 🛑 Если авторизован - ничего не показываем
+  if (user) {
+    return null
+  }
 
   const isValidEmail = (email) => {
     return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
@@ -48,6 +70,7 @@ export default function RegisterPage() {
     setLoading(true)
     try {
       await signUp(email, password, fullName)
+      await checkAuth()
       setSuccessMessage(`✓ Аккаунт создан! Добро пожаловать, ${fullName}!`)
       
       setFullName('')
@@ -57,12 +80,12 @@ export default function RegisterPage() {
       setErrors({})
       
       setTimeout(() => {
-        navigate('/login')
+        navigate('/main')
       }, 2000)
     } catch (error) {
       console.error('Registration error:', error)
-      setErrors({ 
-        submit: error.message || 'Ошибка при регистрации. Попробуйте еще раз.' 
+      setErrors({
+        submit: error.message || 'Ошибка при регистрации. Попробуйте еще раз.'
       })
     } finally {
       setLoading(false)
