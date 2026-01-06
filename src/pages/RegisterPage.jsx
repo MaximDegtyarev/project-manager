@@ -1,0 +1,155 @@
+import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
+import { useAuthStore } from '../store/useAuthStore'
+import '../styles/auth.css'
+
+export default function RegisterPage() {
+  const [fullName, setFullName] = useState('')
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
+  const [confirmPassword, setConfirmPassword] = useState('')
+  const [errors, setErrors] = useState({})
+  const [successMessage, setSuccessMessage] = useState('')
+  const [showPassword, setShowPassword] = useState(false)
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false)
+  const navigate = useNavigate()
+  const { signUp } = useAuthStore()
+
+  const isValidEmail = (email) => {
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
+  }
+
+  const handleSubmit = async (e) => {
+    e.preventDefault()
+    const newErrors = {}
+
+    if (!fullName || fullName.length < 2) {
+      newErrors.fullName = 'Введите корректное имя'
+    }
+
+    if (!email || !isValidEmail(email)) {
+      newErrors.email = 'Введите корректный email'
+    }
+
+    if (!password || password.length < 8) {
+      newErrors.password = 'Пароль минимум 8 символов'
+    }
+
+    if (password !== confirmPassword) {
+      newErrors.confirmPassword = 'Пароли не совпадают'
+    }
+
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors)
+      return
+    }
+
+    try {
+      await signUp(email, password, fullName)
+      setSuccessMessage(`✓ Аккаунт создан! Добро пожаловать, ${fullName}!`)
+      setTimeout(() => {
+        navigate('/login')
+      }, 2000)
+    } catch (error) {
+      setErrors({ submit: error.message })
+    }
+  }
+
+  return (
+    <div className="auth-container">
+      <div className="auth-card">
+        <div className="auth-header">
+          <div className="auth-logo">📋</div>
+          <h1 className="auth-title">PM Helper</h1>
+          <p className="auth-subtitle">Управляй проектами эффективнее с современным инструментом</p>
+        </div>
+
+        {successMessage && (
+          <div className="success-message show">
+            {successMessage}
+          </div>
+        )}
+
+        <form onSubmit={handleSubmit} className="auth-form">
+          <div className="form-group">
+            <label htmlFor="fullName">Полное имя</label>
+            <input
+              type="text"
+              id="fullName"
+              placeholder="Иван Петров"
+              value={fullName}
+              onChange={(e) => setFullName(e.target.value)}
+              required
+            />
+            {errors.fullName && <div className="error-message show">{errors.fullName}</div>}
+          </div>
+
+          <div className="form-group">
+            <label htmlFor="email">Email адрес</label>
+            <input
+              type="email"
+              id="email"
+              placeholder="you@example.com"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+            />
+            {errors.email && <div className="error-message show">{errors.email}</div>}
+          </div>
+
+          <div className="form-group">
+            <label htmlFor="password">Пароль</label>
+            <div className="input-group">
+              <input
+                type={showPassword ? 'text' : 'password'}
+                id="password"
+                placeholder="Минимум 8 символов"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+              />
+              <button
+                type="button"
+                className="toggle-password"
+                onClick={() => setShowPassword(!showPassword)}
+              >
+                {showPassword ? '🙈' : '👁️'}
+              </button>
+            </div>
+            {errors.password && <div className="error-message show">{errors.password}</div>}
+          </div>
+
+          <div className="form-group">
+            <label htmlFor="confirmPassword">Подтвердить пароль</label>
+            <div className="input-group">
+              <input
+                type={showConfirmPassword ? 'text' : 'password'}
+                id="confirmPassword"
+                placeholder="Повторите пароль"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                required
+              />
+              <button
+                type="button"
+                className="toggle-password"
+                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+              >
+                {showConfirmPassword ? '🙈' : '👁️'}
+              </button>
+            </div>
+            {errors.confirmPassword && <div className="error-message show">{errors.confirmPassword}</div>}
+          </div>
+
+          <button type="submit" className="button button-primary">
+            Создать аккаунт
+          </button>
+        </form>
+
+        <div className="auth-footer">
+          <p>Уже есть аккаунт? <a href="/login">Войти</a></p>
+        </div>
+      </div>
+    </div>
+  )
+}
