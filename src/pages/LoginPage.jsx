@@ -1,7 +1,8 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuthStore } from '../store/useAuthStore'
 import '../styles/auth.css'
+
 
 export default function LoginPage() {
   const [email, setEmail] = useState('')
@@ -11,7 +12,28 @@ export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false)
   const [loading, setLoading] = useState(false)
   const navigate = useNavigate()
-  const { signIn } = useAuthStore()
+  const { signIn, user, loading: appLoading, checkAuth } = useAuthStore()
+
+  // 🔑 Если уже авторизован → редирект на /main
+  useEffect(() => {
+    if (!appLoading && user) {
+      navigate('/main', { replace: true })
+    }
+  }, [user, appLoading, navigate])
+
+  // 🚀 Показываем loading пока проверяется авторизация
+  if (appLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-indigo-50 via-white to-blue-50">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
+      </div>
+    )
+  }
+
+  // 🛑 Если авторизован - ничего не показываем
+  if (user) {
+    return null
+  }
 
   const isValidEmail = (email) => {
     return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
@@ -37,6 +59,7 @@ export default function LoginPage() {
     setLoading(true)
     try {
       await signIn(email, password)
+      await checkAuth()
       setSuccessMessage(`✓ Успешный вход! Email: ${email}`)
       
       setEmail('')
@@ -44,12 +67,12 @@ export default function LoginPage() {
       setErrors({})
       
       setTimeout(() => {
-        navigate('/projects')
+        navigate('/main')
       }, 2000)
     } catch (error) {
       console.error('Login error:', error)
-      setErrors({ 
-        submit: error.message || 'Ошибка при входе. Проверьте email и пароль.' 
+      setErrors({
+        submit: error.message || 'Ошибка при входе. Проверьте email и пароль.'
       })
     } finally {
       setLoading(false)
