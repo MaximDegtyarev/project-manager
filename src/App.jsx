@@ -4,15 +4,20 @@ import { useAuthStore } from './store/useAuthStore'
 import LoginPage from './pages/LoginPage'
 import RegisterPage from './pages/RegisterPage'
 import MainPage from './pages/MainPage'
+import ProjectsPage from './pages/ProjectsPage'
+import ResourcesPage from './pages/ResourcesPage'
 import ProtectedRoute from './components/ProtectedRoute'
+
 
 
 function App() {
   const { checkAuth, loading } = useAuthStore()
 
+
   useEffect(() => {
     checkAuth()
   }, [])
+
 
   // 🚀 Показываем loading пока проверяется авторизация
   if (loading) {
@@ -23,12 +28,14 @@ function App() {
     )
   }
 
+
   return (
     <Router>
       <Routes>
         {/* 🔓 PUBLIC ROUTES - для неавторизованных */}
         <Route path="/login" element={<LoginPage />} />
         <Route path="/register" element={<RegisterPage />} />
+
 
         {/* 🔐 PROTECTED ROUTES - для авторизованных */}
         <Route 
@@ -40,6 +47,25 @@ function App() {
           } 
         />
 
+        <Route 
+          path="/projects"
+          element={
+            <ProtectedRoute>
+              <ProjectsPage />
+            </ProtectedRoute>
+          } 
+        />
+
+        <Route 
+          path="/resources"
+          element={
+            <ProtectedRoute>
+              <ResourcesPage />
+            </ProtectedRoute>
+          } 
+        />
+
+
         {/* 🏠 DEFAULT ROUTES */}
         <Route path="/" element={<Navigate to="/main" replace />} />
         <Route path="*" element={<Navigate to="/main" replace />} />
@@ -47,5 +73,6 @@ function App() {
     </Router>
   )
 }
+
 
 export default App
